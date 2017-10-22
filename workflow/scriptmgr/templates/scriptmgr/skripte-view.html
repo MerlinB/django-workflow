@@ -1,0 +1,27 @@
+<!doctype html5>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Skripte</title>
+  </head>
+  <body>
+    <h1>Skripte Manager<h1>
+      {% for key, module in modules.items %}
+      <h2>{{ key }}</h2>
+      <ul>
+        {% for function in module %}
+        <li style="margin-left: 10px;">
+          <h3>{{ function.name }} {{ function.sig }}</h3>
+          <form method="POST" action="{% url 'Workflow:skripte' %}">
+            {% csrf_token %}
+            <input type="hidden" name="module" value="{{ key }}">
+            <input type="hidden" name="function" value="{{ function.name }}">
+            <input type="submit" value="Ausführen">
+          </form>
+          <p>{% if function.doc %}{{ function.doc|linebreaks }}{% endif %}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+  </body>
+</html>

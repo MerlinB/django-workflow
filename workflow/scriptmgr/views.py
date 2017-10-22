@@ -2,8 +2,13 @@ from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import Rechnung2PdfForm
 import inspect
-from . import utils
+from . import utils, betrieb
+from pprint import pprint
+from celery import shared_task
+from .celery import MyFunction
+import sys
 
+pyzot = utils.ImportForeign('pyzot','/home/merlin/Documents/Exzerpte/pyzot.py', venv='/home/merlin/Documents/Exzerpte/venv')
 
 skripte_dir = "/home/scholarium/Skripte/"
 python_bin = skripte_dir+"venv/bin/python3.6"
@@ -11,14 +16,37 @@ python_bin = skripte_dir+"venv/bin/python3.6"
 
 @staff_member_required
 def control_view(request):
-    functions = inspect.getmembers(utils, inspect.isfunction)
-    skripte = {}
+    if request.method == "POST":
+        module = globals()[request.POST['module'].split('.')[-1]]
+        method = getattr(module, request.POST['function'])
+        MyFct = MyFunction(method)
+        MyFct.run()
+
+    modules = {}
+    imports = [
+        betrieb,
+        utils,
+        pyzot,
+    ]
+    for i in imports:
+        functions = inspect.getmembers(i, inspect.isfunction)
+        skripte = []
+        for f in functions:
+            source = {
+                'name': f[0],
+                'sig': inspect.signature(f[1]),
+                'doc': inspect.getdoc(f[1]),
+                'module': f[1].__module__
+            }
+            skripte.append(source)
+        for item in skripte:
+            modules.setdefault(item['module'], []).append(item)
+    # pprint(modules)
     context = {
-        'skripte': functions,
+        'modules': modules,
+        # 'module': module,
     }
-    for f in functions:
-        print(str(inspect.signature(utils.f)))
-    return render(request, 'workflow/skripte-view.html', context)
+    return render(request, 'scriptmgr/skripte-view.html', context)
 
 def rechnung_view(request):
     if request.method == 'POST':
@@ -32,4 +60,4 @@ def rechnung_view(request):
     context = {
         'form': form
     }
-    return render(request, 'workflow/form-view.html', context)
+    return render(request, 'scriptmgr/form-view.html', context)

@@ -5,5 +5,5 @@ from .views import control_view
 app_name = 'Workflow'
 
 urlpatterns = [
-    url('^skripte$', control_view, name='skripte'),
+    url(r'^$', control_view, name='skripte'),
 ]
